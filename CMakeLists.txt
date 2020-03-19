@@ -554,6 +554,91 @@ target_link_libraries(misc05_picking_slow_easy
 set_target_properties(misc05_picking_slow_easy PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
 create_target_launcher(misc05_picking_slow_easy WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
 
+# Misc 5, with glReadPixels
+add_executable(p1
+	misc05_picking/p1_source.cpp
+	common/shader.cpp
+	common/shader.hpp
+	common/controls.cpp
+	common/controls.hpp
+	common/texture.cpp
+	common/texture.hpp
+	common/objloader.cpp
+	common/objloader.hpp
+	common/vboindexer.cpp
+	common/vboindexer.hpp
+	
+	misc05_picking/p1_StandardShading.vertexshader
+	misc05_picking/p1_StandardShading.fragmentshader
+	misc05_picking/p1_Picking.vertexshader
+	misc05_picking/p1_Picking.fragmentshader
+)
+target_link_libraries(p1
+	${ALL_LIBS}
+	ANTTWEAKBAR_116_OGLCORE_GLFW
+)
+# Xcode and Visual working directories
+set_target_properties(p1 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
+create_target_launcher(p1 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
+
+
+# Misc 5, with glReadPixels
+add_executable(hw1b
+	misc05_picking/hw1b.cpp
+	common/shader.cpp
+	common/shader.hpp
+	common/controls.cpp
+	common/controls.hpp
+	common/texture.cpp
+	common/texture.hpp
+	common/objloader.cpp
+	common/objloader.hpp
+	common/vboindexer.cpp
+	common/vboindexer.hpp
+	
+	misc05_picking/hw1bShade.vertexshader
+	misc05_picking/hw1bShade.fragmentshader
+	misc05_picking/hw1bPick.vertexshader
+	misc05_picking/hw1bPick.fragmentshader
+)
+target_link_libraries(hw1b
+	${ALL_LIBS}
+	ANTTWEAKBAR_116_OGLCORE_GLFW
+)
+# Xcode and Visual working directories
+set_target_properties(hw1b PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
+create_target_launcher(hw1b WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
+
+
+
+
+add_executable(hw1c
+	misc05_picking/hw1c.cpp
+	common/shader.cpp
+	common/shader.hpp
+	common/controls.cpp
+	common/controls.hpp
+	common/texture.cpp
+	common/texture.hpp
+	common/objloader.cpp
+	common/objloader.hpp
+	common/vboindexer.cpp
+	common/vboindexer.hpp
+	
+	misc05_picking/hw1bShade.vertexshader
+	misc05_picking/hw1bShade.fragmentshader
+	misc05_picking/hw1bPick.vertexshader
+	misc05_picking/hw1bPick.fragmentshader
+)
+target_link_libraries(hw1c
+	${ALL_LIBS}
+	ANTTWEAKBAR_116_OGLCORE_GLFW
+)
+# Xcode and Visual working directories
+set_target_properties(hw1c PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
+create_target_launcher(hw1c WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
+
+
 # Misc 5, with custom ray-box intersection
 add_executable(misc05_picking_custom
 	misc05_picking/misc05_picking_custom.cpp
@@ -761,6 +846,18 @@ add_custom_command(
    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/misc05_picking_slow_easy${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/"
 )
 add_custom_command(
+   TARGET p1 POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/p1${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/"
+)
+add_custom_command(
+   TARGET hw1b POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/hw1b${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/"
+)
+add_custom_command(
+   TARGET hw1c POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/hw1b${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/"
+)
+add_custom_command(
    TARGET misc05_picking_custom POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/misc05_picking_custom${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/"
 )
@@ -772,4 +869,3 @@ add_custom_command(
 elseif (${CMAKE_GENERATOR} MATCHES "Xcode" )
 
 endif (NOT ${CMAKE_GENERATOR} MATCHES "Xcode" )
-
