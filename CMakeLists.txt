@@ -555,6 +555,34 @@ set_target_properties(misc05_picking_slow_easy PROPERTIES XCODE_ATTRIBUTE_CONFIG
 create_target_launcher(misc05_picking_slow_easy WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
 
 # Misc 5, with glReadPixels
+add_executable(project3
+	misc05_picking/project3.cpp
+	common/shader.cpp
+	common/shader.hpp
+	common/controls.cpp
+	common/controls.hpp
+	common/texture.cpp
+	common/texture.hpp
+	common/objloader.cpp
+	common/objloader.hpp
+	common/vboindexer.cpp
+	common/vboindexer.hpp
+	
+	misc05_picking/StandardShading.vertexshader
+	misc05_picking/StandardShading.fragmentshader
+	misc05_picking/Picking.vertexshader
+	misc05_picking/Picking.fragmentshader
+)
+target_link_libraries(project3
+	${ALL_LIBS}
+	ANTTWEAKBAR_116_OGLCORE_GLFW
+)
+# Xcode and Visual working directories
+set_target_properties(project3 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
+create_target_launcher(project3 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/")
+
+
+# Misc 5, with glReadPixels
 add_executable(p1
 	misc05_picking/p1_source.cpp
 	common/shader.cpp
@@ -844,6 +872,10 @@ add_custom_command(
 add_custom_command(
    TARGET misc05_picking_slow_easy POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/misc05_picking_slow_easy${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/"
+)
+add_custom_command(
+   TARGET project3 POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/project3${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/misc05_picking/"
 )
 add_custom_command(
    TARGET p1 POST_BUILD
