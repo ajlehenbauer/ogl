@@ -572,6 +572,8 @@ add_executable(project3
 	misc05_picking/StandardShading.fragmentshader
 	misc05_picking/Picking.vertexshader
 	misc05_picking/Picking.fragmentshader
+	misc05_picking/TextureShading.vertexshader
+	misc05_picking/TextureShading.fragmentshader
 )
 target_link_libraries(project3
 	${ALL_LIBS}

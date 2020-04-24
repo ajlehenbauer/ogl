@@ -20,6 +20,7 @@ using namespace glm;
 //#include <AntTweakBar.h>
 
 #include <common/shader.hpp>
+#include <common/texture.hpp>
 #include <common/controls.hpp>
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
@@ -35,6 +36,7 @@ typedef struct Vertex {
 	float Position[4];
 	float Color[4];
 	float Normal[3];
+	float UV[2];
 	void SetPosition(float *coords) {
 		Position[0] = coords[0];
 		Position[1] = coords[1];
@@ -45,12 +47,16 @@ typedef struct Vertex {
 		Color[0] = color[0];
 		Color[1] = color[1];
 		Color[2] = color[2];
-		Color[3] = color[3];
+		Color[3] = color[3];  
 	}
 	void SetNormal(float *coords) {
 		Normal[0] = coords[0];
 		Normal[1] = coords[1];
 		Normal[2] = coords[2];
+	}
+	void SetUV(float *coords) {
+		UV[0] = coords[0];
+		UV[1] = coords[1];
 	}
 };
 
@@ -117,23 +123,90 @@ GLushort* baseIdcs;
 GLushort* ballIdcs;
 GLushort* projectileIdcs;
 // animation control
+
+
+//TEXTURE STUFF
+GLuint TextureProgramID;
+// Get a handle for our "MVP" uniform
+GLuint TextureMatrixID;
+//GLuint Texture = loadBMP_custom("uvtemplate.bmp");
+GLuint Texture;
+// Get a handle for our "myTextureSampler" uniform
+GLuint TextureID;
+// Data read from the header of the BMP file
+
+bool showTexture;
+
+unsigned char texHeader[54]; // Each BMP file begins by a 54-bytes header
+unsigned int texDataPos;     // Position in the file where the actual data begins
+unsigned int texWidth, texHeight;
+unsigned int imageSize;   // = width*height*3
+// Actual RGB data
+unsigned char * texData;
+GLuint textureID;
+
+
+
 bool animation = false;
 GLfloat phi = 0.0;
 int actions;
 vec3 * bezier;
+
+GLuint loadBMP(const char* imagepath) {
+	FILE * file = fopen(imagepath, "rb");
+	if (!file) { printf("Image could not be opened\n"); return 0; }
+	if (fread(texHeader, 1, 54, file) != 54) { // If not 54 bytes read : problem
+		printf("Not a correct BMP file\n");
+		return false;
+	}
+	if (texHeader[0] != 'B' || texHeader[1] != 'M') {
+		printf("Not a correct BMP file\n");
+		return 0;
+	}
+	texDataPos = *(int*)&(texHeader[0x0A]);
+	imageSize = *(int*)&(texHeader[0x22]);
+	texWidth = *(int*)&(texHeader[0x12]);
+	texHeight = *(int*)&(texHeader[0x16]);
+	if (imageSize == 0)    imageSize = texWidth * texHeight * 3; // 3 : one byte for each Red, Green and Blue component
+	if (texDataPos == 0)   texDataPos = 54; // The BMP header is done that way
+
+	// Create a buffer
+	texData = new unsigned char[imageSize];
+
+	// Read the actual data from the file into the buffer
+	fread(texData, 1, imageSize, file);
+
+	//Everything is in memory now, the file can be closed
+	fclose(file);
+}
+
+void createTexture() {
+	glGenTextures(1, &textureID);
+
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	// Give the image to OpenGL
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texWidth, texHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, texData);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+
 void loadObject(char* file, glm::vec4 color, Vertex * &out_Vertices, GLushort* &out_Indices, int ObjectId)
 {
 	// Read our .obj file
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> uvs;
 	std::vector<glm::vec3> normals;
-	bool res = loadOBJ(file, vertices, normals);
+	bool res = loadOBJ(file, vertices, uvs, normals);
 
 	std::vector<GLushort> indices;
 	std::vector<glm::vec3> indexed_vertices;
 	std::vector<glm::vec2> indexed_uvs;
 	std::vector<glm::vec3> indexed_normals;
-	indexVBO(vertices, normals, indices, indexed_vertices, indexed_normals);
+
+	indexVBO(vertices, uvs, normals, indices, indexed_vertices, indexed_uvs, indexed_normals);
 
 	const size_t vertCount = indexed_vertices.size();
 	const size_t idxCount = indices.size();
@@ -144,6 +217,8 @@ void loadObject(char* file, glm::vec4 color, Vertex * &out_Vertices, GLushort* &
 		out_Vertices[i].SetPosition(&indexed_vertices[i].x);
 		out_Vertices[i].SetNormal(&indexed_normals[i].x);
 		out_Vertices[i].SetColor(&color[0]);
+		out_Vertices[i].SetUV(&indexed_uvs[i].x);
+		
 	}
 	out_Indices = new GLushort[idxCount];
 	for (int i = 0; i < idxCount; i++) {
@@ -158,39 +233,7 @@ void loadObject(char* file, glm::vec4 color, Vertex * &out_Vertices, GLushort* &
 	
 }
 
-void rotateSingle(float * &r,float x, float y, float a, float b, string d) {
-	float theta;
-	float alpha;
-	if (d == "left") {
-		theta = .1;
-	}
-	else if (d == "right") {
-		theta = -.1;
-	}
-	else if (d == "up") {
-		theta = .1;
-	}
-	else if (d == "down") {
-		theta = -.1;
-	}
-	else {
-		theta = 0;
-	}
-	
-		r = new float[2];
-		x = x - a;
-		y = y - b;
-		r[0] = ((x)* cos(theta) - (y)* sin(theta)) + a;
-		r[1] = ((x)* sin(theta) + (y)* cos(theta)) + b;
 
-}
-void rotateY(float * &r, float x, float z, float a, float b, float theta) {
-	r = new float[2];
-	x = x - a;
-	z = z - b;
-	r[0] = ((x)* cos(theta) - (z)* sin(theta)) + a;
-	r[1] = ((x)* sin(theta) + (z)* cos(theta)) + b;
-}
 void createObjects(void)
 {
 	//-- COORDINATE AXES --//
@@ -253,182 +296,9 @@ void createObjects(void)
 	Vertex* Verts;
 	GLushort* Idcs;
 	
-	loadObject("newHead.obj", glm::vec4(.5,.5, .5, 1.0), headVertex, headIdcs, 2);
+	loadObject("newHeadTest.obj", glm::vec4(.5,.5, .5, 1.0), headVertex, headIdcs, 2);
 	createVAOs(headVertex, headIdcs, 2);
 	
-
-}
-void rotate(int objectNum, string d) {
-	
-	
-	Vertex  origin;
-	switch (objectNum) {
-		case 2:
-			origin = headVertex[numVertices[2]-1];
-			break;
-
-		case 4:
-			origin = arm1Vertex[2];
-			break;
-		case 6:
-			origin = arm2Vertex[numVertices[6]-1];
-			break;
-		case 7:
-			origin = penVertex[numVertices[7]-1];
-	}
-
-	
-	if (objectNum <= 7) {
-		for (int i = 0; i < numVertices[7]; i++) {
-			
-			float* r;
-			
-			if (d == "left" || d == "right") {
-				rotateSingle(r, penVertex[i].Position[0], penVertex[i].Position[2],
-					origin.Position[0],
-					origin.Position[2], d);
-				penVertex[i].Position[0] = r[0];
-				penVertex[i].Position[2] = r[1];
-			}
-			else {
-				rotateSingle(r, penVertex[i].Position[0], penVertex[i].Position[1],
-					origin.Position[0],
-					origin.Position[1], d);
-				penVertex[i].Position[0] = r[0];
-				penVertex[i].Position[1] = r[1];
-			}
-			
-		}
-		createVAOs(penVertex, penIdcs, 7);
-		
-	}
-	
-	if (objectNum <= 6) {
-		for (int i = 0; i < numVertices[6]; i++) {
-
-			float* r;
-
-			if (d == "left" || d == "right") {
-				rotateSingle(r, arm2Vertex[i].Position[0], arm2Vertex[i].Position[2],
-					origin.Position[0],
-					origin.Position[2], d);
-				arm2Vertex[i].Position[0] = r[0];
-				arm2Vertex[i].Position[2] = r[1];
-			}
-			else {
-				rotateSingle(r, arm2Vertex[i].Position[0], arm2Vertex[i].Position[1],
-					origin.Position[0],
-					origin.Position[1], d);
-				arm2Vertex[i].Position[0] = r[0];
-				arm2Vertex[i].Position[1] = r[1];
-			}
-		}
-		createVAOs(arm2Vertex, arm2Idcs, 6);
-	}
-	if (objectNum <= 5) {
-		for (int i = 0; i < numVertices[5]; i++) {
-
-			float* r;
-
-			if (d == "left" || d == "right") {
-				rotateSingle(r, balljointVertex[i].Position[0], balljointVertex[i].Position[2],
-					origin.Position[0],
-					origin.Position[2], d);
-				balljointVertex[i].Position[0] = r[0];
-				balljointVertex[i].Position[2] = r[1];
-			}
-			else {
-				rotateSingle(r, balljointVertex[i].Position[0], balljointVertex[i].Position[1],
-					origin.Position[0],
-					origin.Position[1], d);
-				balljointVertex[i].Position[0] = r[0];
-				balljointVertex[i].Position[1] = r[1];
-			}
-		}
-		createVAOs(balljointVertex, ballIdcs, 5);
-	}
-	if (objectNum <= 4) {
-		for (int i = 0; i < numVertices[4]; i++) {
-
-			float* r;
-
-			if (d == "left" || d == "right") {
-				rotateSingle(r, arm1Vertex[i].Position[0], arm1Vertex[i].Position[2],
-					origin.Position[0],
-					origin.Position[2], d);
-				arm1Vertex[i].Position[0] = r[0];
-				arm1Vertex[i].Position[2] = r[1];
-			}
-			else {
-				rotateSingle(r, arm1Vertex[i].Position[0], arm1Vertex[i].Position[1],
-					origin.Position[0],
-					origin.Position[1], d);
-				arm1Vertex[i].Position[0] = r[0];
-				arm1Vertex[i].Position[1] = r[1];
-			}
-		}
-		
-		createVAOs(arm1Vertex, arm1Idcs, 4);
-	}
-	
-	if (objectNum <= 2) {
-		for (int i = 0; i < numVertices[2]; i++) {
-
-			float* r;
-
-			if (d == "left" || d == "right") {
-				rotateSingle(r, headVertex[i].Position[0], headVertex[i].Position[2],
-					origin.Position[0],
-					origin.Position[2], d);
-				headVertex[i].Position[0] = r[0];
-				headVertex[i].Position[2] = r[1];
-			}
-			else {
-				rotateSingle(r, headVertex[i].Position[0], headVertex[i].Position[1],
-					origin.Position[0],
-					origin.Position[1], d);
-				headVertex[i].Position[0] = r[0];
-				headVertex[i].Position[1] = r[1];
-			}
-		}
-		createVAOs(headVertex, headIdcs, 2);
-	}
-
-
-
-}
-void translate(float x, float z) {
-
-	for (int i = 0; i < numVertices[3]; i++) {
-		baseVertex[i].Position[0] += x;
-		baseVertex[i].Position[2] += z;
-	}
-	createVAOs(baseVertex, baseIdcs, 3);
-	for (int i = 0; i < numVertices[2]; i++) {
-		headVertex[i].Position[0] += x;
-		headVertex[i].Position[2] += z;
-	}
-	createVAOs(headVertex, headIdcs, 2);
-	for (int i = 0; i < numVertices[4]; i++) {
-		arm1Vertex[i].Position[0] += x;
-		arm1Vertex[i].Position[2] += z;
-	}
-	createVAOs(arm1Vertex, arm1Idcs, 4);
-	for (int i = 0; i < numVertices[5]; i++) {
-		balljointVertex[i].Position[0] += x;
-		balljointVertex[i].Position[2] += z;
-	}
-	createVAOs(balljointVertex, ballIdcs, 5);
-	for (int i = 0; i < numVertices[6]; i++) {
-		arm2Vertex[i].Position[0] += x;
-		arm2Vertex[i].Position[2] += z;
-	}
-	createVAOs(arm2Vertex, arm2Idcs, 6);
-	for (int i = 0; i < numVertices[7]; i++) {
-		penVertex[i].Position[0] += x;
-		penVertex[i].Position[2] += z;
-	}
-	createVAOs(penVertex, penIdcs, 7);
 
 }
 
@@ -464,20 +334,52 @@ void renderScene(void)
 		glDrawArrays(GL_LINES, 0, 44);
 		
 		
-		
-		glBindVertexArray(VertexArrayId[2]);	// draw body
-		
-		
-		glDrawElements(GL_TRIANGLES, 1200, GL_UNSIGNED_SHORT,0);
-		
+		if (!showTexture) {
+			glBindVertexArray(VertexArrayId[2]);	// draw body
 
 
+			glDrawElements(GL_TRIANGLES, 1200, GL_UNSIGNED_SHORT, 0);
+		}
+		
 
+		
 
 		glBindVertexArray(0);
 
 	}
+	if (showTexture) {
+		glUseProgram(TextureProgramID);
+		{
+			glm::vec3 lightPos = camPos;
+			glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+			glm::mat4 ModelMatrix = glm::mat4(1.0); // TranslationMatrix * RotationMatrix;
+			glm::mat4 MVP = gProjectionMatrix * gViewMatrix * ModelMatrix;
+			// Send our transformation to the currently bound shader, 
+			// in the "MVP" uniform
+			glUniformMatrix4fv(TextureMatrixID, 1, GL_FALSE, &MVP[0][0]);
+
+
+
+			glBindVertexArray(VertexArrayId[2]);	// draw body
+
+			// Bind our texture in Texture Unit 0
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, Texture);
+			// Set our "myTextureSampler" sampler to use Texture Unit 0
+			glUniform1i(TextureID, 0);
+
+			glDrawElements(GL_TRIANGLES, 1200, GL_UNSIGNED_SHORT, 0);
+
+			glBindVertexArray(0);
+		}
+	}
+	
+
 	glUseProgram(0);
+
+
+
+
 	// Draw GUI
 	//TwDraw();
 
@@ -665,55 +567,16 @@ void initOpenGL(void)
 	LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
 	
 
-
+	TextureProgramID = LoadShaders("TextureShading.vertexshader", "TextureShading.fragmentshader");
+	TextureMatrixID = glGetUniformLocation(TextureProgramID, "MVP");
 	
+	Texture = loadBMP_custom("Anthony.bmp");
+	TextureID = glGetUniformLocation(TextureProgramID, "myTextureSampler");
 	
 	createObjects();
 }
-void createBezier(glm::vec3 * & points) {
 
-	
-	vec3 s = { penVertex[numVertices[7]-1].Position[0],penVertex[numVertices[7]-1].Position[1],penVertex[numVertices[7]-1].Position[2] };
 
-	vec3 e = { penVertex[0].Position[0],penVertex[0].Position[1],penVertex[0].Position[2] };
-	float d = glm::distance(s, e);
-	glm::vec3 v = e-s;
-	points = new vec3[4];
-	points[0] = e;
-	points[1] = e + v;
-	vec3 a = { v[0],0,v[2] };
-	points[2] = points[1]+a;
-	points[3] = points[2] + a;
-	points[3][1] = 0;
-}
-void moveToBezPoint(glm::vec3  points[], float t) {
-	cout <<"t:"<< t << endl;
-	vec3 a = points[0] * (1-t) + points[1] * t;
-	vec3 b = points[1] * (1 - t) + points[2] * t;
-	vec3 c = points[2] * (1 - t) + points[3] * t;
-	vec3 d = a * (1 - t) + b * t;
-	vec3 e = b * (1 - t) + c * t;
-	vec3 f = d * (1 - t) + e * t;
-
-	vec3 p = { projectileVertex[0].Position[0],projectileVertex[0].Position[1],projectileVertex[0].Position[2] };
-	
-	vec3 dist = f-p;
-
-	for (int i = 0; i < numVertices[8]; i++) {
-		projectileVertex[i].Position[0] += dist[0];
-		projectileVertex[i].Position[1] += dist[1];
-		projectileVertex[i].Position[2] += dist[2];
-
-	}
-
-	createVAOs(projectileVertex, projectileIdcs, 8);
-	vec3 center = { arm1Vertex[2].Position[0], arm1Vertex[2].Position[1] , arm1Vertex[2].Position[2] };
-	vec3 td = points[3] - center ;
-	if (t >=1) {
-		translate(td[0], td[2]);
-	}
-
-}
 void createVAOs(Vertex Vertices[], unsigned short Indices[], int ObjectId) {
 	
 	
@@ -721,6 +584,7 @@ void createVAOs(Vertex Vertices[], unsigned short Indices[], int ObjectId) {
 	const size_t VertexSize = sizeof(Vertices[0]);
 	const size_t RgbOffset = sizeof(Vertices[0].Position);
 	const size_t Normaloffset = sizeof(Vertices[0].Color) + RgbOffset;
+	const size_t UVoffset = sizeof(Vertices[0].Normal) + Normaloffset;
 
 	// Create Vertex Array Object
 	glGenVertexArrays(1, &VertexArrayId[ObjectId]);	//
@@ -741,12 +605,20 @@ void createVAOs(Vertex Vertices[], unsigned short Indices[], int ObjectId) {
 	// Assign vertex attributes
 	// Assign vertex es
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, VertexSize, 0);
+	
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, VertexSize, (GLvoid*)RgbOffset); 
+	
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, VertexSize, (GLvoid*)Normaloffset);
+
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, VertexSize, (GLvoid*)UVoffset);
+
 
 	glEnableVertexAttribArray(0);	// position
 	glEnableVertexAttribArray(1);	// color
 	glEnableVertexAttribArray(2);	// normal
+	glEnableVertexAttribArray(3);	// texture
+
+
 
 	// Disable our Vertex Buffer Object 
 	glBindVertexArray(0);
@@ -788,12 +660,7 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			if (actions == -1) {
 				moveCameraLR(true);
 			}
-			else if (actions == 2) {
-				translate(.1, 0);
-			}
-			else {
-				rotate(actions,"left");
-			}
+			
 			
 			
 			break;
@@ -802,34 +669,19 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 			if (actions == -1) {
 				moveCameraLR(false);
 			}
-			else if (actions == 2) {
-				translate(-.1, 0);
-			}
-			else {
-				rotate(actions, "right");
-			}
+			
 			break;
 		case GLFW_KEY_UP:
 			if (actions == -1) {
 				moveCameraZ(true);
 			}
-			else if (actions == 2) {
-				translate(0, .1);
-			}
-			else {
-				rotate(actions, "up");
-			}
+			
 			break;
 		case GLFW_KEY_DOWN:
 			if (actions == -1) {
 				moveCameraZ(false);
 			}
-			else if (actions == 2) {
-				translate(0, -.1);
-			}
-			else {
-				rotate(actions, "down");
-			}
+			
 			break;
 		
 		default:
@@ -842,7 +694,11 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		case GLFW_KEY_C:
 			actions = -1;
 			break;
+		case GLFW_KEY_T:
+			showTexture = !showTexture;
+			break;
 		}
+		
 	}
 }
 
@@ -856,6 +712,7 @@ static void mouseCallback(GLFWwindow* window, int button, int action, int mods)
 int main(void)
 {
 	actions = -1;
+	showTexture = false;
 	// initialize window
 	int errorCode = initWindow();
 	if (errorCode != 0)
@@ -863,7 +720,8 @@ int main(void)
 
 	// initialize OpenGL pipeline
 	initOpenGL();
-	
+
+
 	// For speed computation
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
@@ -878,23 +736,7 @@ int main(void)
 		//	lastTime += 1.0;
 		//}
 		
-		if (animation){
-			
-			vec3 * me;
-		;
-			createBezier(me);
-			//cout << penVertex[0].Position[0] << ", " << penVertex[0].Position[1] << ", " << penVertex[0].Position[2] << endl;
-			
-			cout << projectileVertex[0].Position[0] << ", "<<projectileVertex[0].Position[1] << ", "<<projectileVertex[0].Position[2] << endl;
-			moveToBezPoint(me, phi);
-			
-			
-			phi += 0.01;
-			if (phi > 1.01) {
-				phi = 0;
-				animation = false;
-			}
-		}
+		
 
 		// DRAWING POINTS
 		renderScene();
