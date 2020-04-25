@@ -223,41 +223,41 @@ void generatePN(Vertex * &out_Vertices, GLushort* &out_Indices) {
 		//cout << "j: " << b030.Position[0] << ", " << b030.Position[1] << ", " << b030.Position[2] << endl;
 		//cout << "k: " << b003.Position[0] << ", " << b003.Position[1] << ", " << b003.Position[2] << endl;
 		int j = (i / 3) * 27;
-		out_Vertices[j] = evalbuv(0, 0, b300, b030, b003);
-		out_Vertices[j + 1] = evalbuv(0, .333, b300, b030, b003);
-		out_Vertices[j + 2] = evalbuv(.333,0, b300, b030, b003);
+		out_Vertices[j] = evalbuv(1, 0, b300, b030, b003);
+		out_Vertices[j + 1] = evalbuv(.666, .333, b300, b030, b003);
+		out_Vertices[j + 2] = evalbuv(.666,0, b300, b030, b003);
 		
-		out_Vertices[j + 3] = evalbuv(.333,0, b300, b030, b003);
-		out_Vertices[j + 4] = evalbuv(0, .333, b300, b030, b003);
-		out_Vertices[j + 5] = evalbuv(.666, .5, b300, b030, b003);
+		out_Vertices[j + 3] = evalbuv(.666,.333, b300, b030, b003);
+		out_Vertices[j + 4] = evalbuv(.666, 0, b300, b030, b003);
+		out_Vertices[j + 5] = evalbuv(.333, .333, b300, b030, b003);
 		
-		out_Vertices[j + 6] = evalbuv(.333, 0, b300, b030, b003);
-		out_Vertices[j + 7] = evalbuv(.666, 0, b300, b030, b003);
-		out_Vertices[j + 8] = evalbuv(.666,.5, b300, b030, b003);
+		out_Vertices[j + 6] = evalbuv(.666, .333, b300, b030, b003);
+		out_Vertices[j + 7] = evalbuv(.333, .333, b300, b030, b003);
+		out_Vertices[j + 8] = evalbuv(.333,.666, b300, b030, b003);
 		
-		out_Vertices[j + 9] = evalbuv(0, .333, b300, b030, b003);
-		out_Vertices[j + 10] = evalbuv(0, .666, b300, b030, b003);
-		out_Vertices[j + 11] = evalbuv(.666,.5, b300, b030, b003);
+		out_Vertices[j + 9] = evalbuv(.666, 0, b300, b030, b003);
+		out_Vertices[j + 10] = evalbuv(.333, 0, b300, b030, b003);
+		out_Vertices[j + 11] = evalbuv(.333,.333, b300, b030, b003);
 		
-		out_Vertices[j + 12] = evalbuv(.666, 0, b300, b030, b003);
-		out_Vertices[j + 13] = evalbuv(1,0, b300, b030, b003);
-		out_Vertices[j + 14] = evalbuv(1, .333, b300, b030, b003);
+		out_Vertices[j + 12] = evalbuv(.333, .666, b300, b030, b003);
+		out_Vertices[j + 13] = evalbuv(.333,.333, b300, b030, b003);
+		out_Vertices[j + 14] = evalbuv(0, .666, b300, b030, b003);
 		
-		out_Vertices[j + 15] = evalbuv(.666,0, b300, b030, b003);
-		out_Vertices[j + 16] = evalbuv(1, .333, b300, b030, b003);
-		out_Vertices[j + 17] = evalbuv(.666, .5, b300, b030, b003);
+		out_Vertices[j + 15] = evalbuv(.333,.666, b300, b030, b003);
+		out_Vertices[j + 16] = evalbuv(.333, .333, b300, b030, b003);
+		out_Vertices[j + 17] = evalbuv(.0, .666, b300, b030, b003);
 		
-		out_Vertices[j + 18] = evalbuv( 1, .333, b300, b030, b003);
-		out_Vertices[j + 19] = evalbuv(1, .666, b300, b030, b003);
-		out_Vertices[j + 20] = evalbuv(.666, .5, b300, b030, b003);
+		out_Vertices[j + 18] = evalbuv( 0, .666, b300, b030, b003);
+		out_Vertices[j + 19] = evalbuv(.333, .333, b300, b030, b003);
+		out_Vertices[j + 20] = evalbuv(.0, .333, b300, b030, b003);
 		
-		out_Vertices[j + 21] = evalbuv(0, .666, b300, b030, b003);
-		out_Vertices[j + 22] = evalbuv(0,1, b300, b030, b003);
-		out_Vertices[j + 23] = evalbuv(1, .666, b300, b030, b003);
+		out_Vertices[j + 21] = evalbuv(0, .333, b300, b030, b003);
+		out_Vertices[j + 22] = evalbuv(.333,.333, b300, b030, b003);
+		out_Vertices[j + 23] = evalbuv(.333, 0, b300, b030, b003);
 		
-		out_Vertices[j + 24] = evalbuv(0, .666, b300, b030, b003);
-		out_Vertices[j + 25] = evalbuv(1, .666, b300, b030, b003);
-		out_Vertices[j + 26] = evalbuv(.666, .5, b300, b030, b003);
+		out_Vertices[j + 24] = evalbuv(0, .333, b300, b030, b003);
+		out_Vertices[j + 25] = evalbuv(0,0, b300, b030, b003);
+		out_Vertices[j + 26] = evalbuv(.0, .333, b300, b030, b003);
 		
 		//cout <<"b: "<< b030.Normal[0] << ", " << b030.Normal[1] << ", " << b030.Normal[2] << endl;
 		//cout <<"j: " <<PNHead[j+13].Normal[0] << ", " << PNHead[j+13].Normal[1] << ", " << PNHead[j+13].Normal[2] << endl;
@@ -532,7 +532,8 @@ void renderScene(void)
 			}
 			else {
 				glBindVertexArray(VertexArrayId[3]);	// draw body
-				glDrawArrays(GL_TRIANGLES, 0, 9690);
+				glDrawArrays(GL_POINTS, 0, 9690);
+				//glDrawElements(GL_TRIANGLES, 9600, GL_UNSIGNED_SHORT, 0);
 			}
 			
 			
