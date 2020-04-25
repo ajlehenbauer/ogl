@@ -574,6 +574,12 @@ add_executable(project3
 	misc05_picking/Picking.fragmentshader
 	misc05_picking/TextureShading.vertexshader
 	misc05_picking/TextureShading.fragmentshader
+	misc05_picking/Tessellation.fs.glsl
+	misc05_picking/Tessellation.tc.glsl
+	misc05_picking/Tessellation.te.glsl
+	misc05_picking/Tessellation.vs.glsl
+
+
 )
 target_link_libraries(project3
 	${ALL_LIBS}

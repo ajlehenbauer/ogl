@@ -3,6 +3,7 @@
 layout(location = 0) in vec4 vertexPosition_modelspace;
 layout(location = 1) in vec4 vertexColor;
 layout(location = 2) in vec3 vertexNormal;
+layout(location = 3) in vec3 UV;
 
 out vec4 vs_vertexColor;
 out vec3 Normal_cameraspace;
