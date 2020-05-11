@@ -16,9 +16,7 @@ void main(){
     vec3 LightDiffuseColor = vec3(0.5, 0.5, 0.5);
     vec3 LightSpecularColor = vec3(0.5, 0.5, 0.5);
     
-    float k_constant = 1.0;
-    float k_linear = 0.005;
-    float k_quadratic = 0.0005;
+
     
     // Material properties
     vec3 MaterialAmbientColor = vs_vertexColor.rgb;
@@ -43,7 +41,7 @@ void main(){
     
     vec3 TotalSpecularColor = spec * LightSpecularColor * MaterialSpecularColor;
     
-    //float attu = 1.0f / (k_constant + k_linear*light_distance + k_quadratic*light_distance*light_distance);
-    float attu = 0.577969;
-    color = attu * (TotalAmbientColor + TotalDiffuseColor + TotalSpecularColor);
+    
+    float a = 0.6;
+    color = a * (TotalAmbientColor + TotalDiffuseColor + TotalSpecularColor);
 }

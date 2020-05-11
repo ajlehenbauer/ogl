@@ -108,7 +108,11 @@ GLint gZ = 0.0;
 
 
 Vertex *headVertex;
-//Vertex *PNHead;
+Vertex *renderHeadVertex;
+Vertex *smileVertex;
+
+Vertex smallTri[27];
+GLushort smi[27];
 
 Vertex *PNHead;
 Vertex *baseVertex;
@@ -120,6 +124,7 @@ Vertex *projectileVertex;
 
 GLushort* penIdcs;
 GLushort* headIdcs;
+GLushort* smileIdcs;
 GLushort* PNIdcs;
 
 GLushort* arm1Idcs;
@@ -140,27 +145,15 @@ GLuint Texture;
 GLuint TextureID;
 // Data read from the header of the BMP file
 
-//tesselation
-GLuint tessProgramID;
-GLuint matrixID;
-GLuint modelMatrixID;
-GLuint viewMatrixID;
-GLuint projectionMatrixID;
-GLuint lightID;
-GLuint tessMatrixID;
-GLuint tessModelMatrixID;
-GLuint tessViewMatrixID;
-GLuint tessProjectionMatrixID;
-GLuint tessLightID;
-GLfloat tessellationLevelInnerID;
-GLfloat tessellationLevelOuterID;
 
+float animate;
 
-
+int subTriangle;
 bool showTexture;
 bool showSmooth;
-bool showTess;
+
 bool showOriginal;
+bool drawEls;
 unsigned char texHeader[54]; // Each BMP file begins by a 54-bytes header
 unsigned int texDataPos;     // Position in the file where the actual data begins
 unsigned int texWidth, texHeight;
@@ -204,6 +197,55 @@ GLuint loadBMP(const char* imagepath) {
 	fclose(file);
 }
 
+void generatePN2(Vertex * &out_Vertices, GLushort* &out_Indices) {
+	Vertex b003;
+	Vertex b030;
+	Vertex b300;
+
+
+
+	out_Vertices = new Vertex[3231];
+
+	for (int i = 0; i < numVertices[2] - 3; i += 3) {
+		//cout << i << endl;
+		b300 = headVertex[i];
+		b030 = headVertex[i + 1];
+		b003 = headVertex[i + 2];
+		//cout<<"i: "<< b300.Position[0] << ", " << b300.Position[1] << ", " << b300.Position[2] << endl;
+		//cout << "j: " << b030.Position[0] << ", " << b030.Position[1] << ", " << b030.Position[2] << endl;
+		//cout << "k: " << b003.Position[0] << ", " << b003.Position[1] << ", " << b003.Position[2] << endl;
+		int j = (i / 3) * 9;
+		out_Vertices[j] = evalbuv(1, 0, b300, b030, b003);
+		out_Vertices[j + 1] = evalbuv(.5, .5, b300, b030, b003);
+		out_Vertices[j + 2] = evalbuv(.5, 0, b300, b030, b003);
+
+		out_Vertices[j + 3] = evalbuv(.5, .5, b300, b030, b003);
+		out_Vertices[j + 4] = evalbuv(0, 1, b300, b030, b003);
+		out_Vertices[j + 5] = evalbuv(.5, 0, b300, b030, b003);
+
+		out_Vertices[j + 6] = evalbuv(.5, 0, b300, b030, b003);
+		out_Vertices[j + 7] = evalbuv(0, 1, b300, b030, b003);
+		out_Vertices[j + 8] = evalbuv(0, 0, b300, b030, b003);
+
+		
+
+
+		//cout <<"b: "<< b030.Normal[0] << ", " << b030.Normal[1] << ", " << b030.Normal[2] << endl;
+		//cout <<"j: " <<PNHead[j+13].Normal[0] << ", " << PNHead[j+13].Normal[1] << ", " << PNHead[j+13].Normal[2] << endl;
+
+	}
+	out_Indices = new GLushort[3231];
+
+	for (int i = 0; i < 3231; i++) {
+		out_Indices[i] = i;
+
+	}
+	numVertices[3] = 3231;
+	//cout << "j: " << PNHead[0].Normal[0] << ", " << PNHead[0].Normal[1] << ", " << PNHead[0].Normal[2] << endl;
+
+}
+
+
 void generatePN(Vertex * &out_Vertices, GLushort* &out_Indices) {
 	
 	Vertex b003;
@@ -214,8 +256,8 @@ void generatePN(Vertex * &out_Vertices, GLushort* &out_Indices) {
 
 	out_Vertices = new Vertex[9693];
 	
-	for (int i = 0; i < 1077; i+=3) {
-		
+	for (int i =0; i < numVertices[2]-3; i+=3) {
+		//cout << i << endl;
 		b300 = headVertex[i];
 		b030 = headVertex[i + 1];
 		b003 = headVertex[i + 2];
@@ -224,40 +266,40 @@ void generatePN(Vertex * &out_Vertices, GLushort* &out_Indices) {
 		//cout << "k: " << b003.Position[0] << ", " << b003.Position[1] << ", " << b003.Position[2] << endl;
 		int j = (i / 3) * 27;
 		out_Vertices[j] = evalbuv(1, 0, b300, b030, b003);
-		out_Vertices[j + 1] = evalbuv(.666, .333, b300, b030, b003);
-		out_Vertices[j + 2] = evalbuv(.666,0, b300, b030, b003);
+		out_Vertices[j + 1] = evalbuv(2.f/3.f, 1.f/3.f, b300, b030, b003);
+		out_Vertices[j + 2] = evalbuv(2.f / 3.f,0, b300, b030, b003);
 		
-		out_Vertices[j + 3] = evalbuv(.666,.333, b300, b030, b003);
-		out_Vertices[j + 4] = evalbuv(.666, 0, b300, b030, b003);
-		out_Vertices[j + 5] = evalbuv(.333, .333, b300, b030, b003);
+		out_Vertices[j + 3] = evalbuv(2.f / 3.f, 1.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 5] = evalbuv(2.f / 3.f, 0, b300, b030, b003);
+		out_Vertices[j + 4] = evalbuv(1.f / 3.f, 1.f / 3.f, b300, b030, b003);
 		
-		out_Vertices[j + 6] = evalbuv(.666, .333, b300, b030, b003);
-		out_Vertices[j + 7] = evalbuv(.333, .333, b300, b030, b003);
-		out_Vertices[j + 8] = evalbuv(.333,.666, b300, b030, b003);
+		out_Vertices[j + 6] = evalbuv(2.f / 3.f, 1.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 8] = evalbuv(1.f / 3.f, 1.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 7] = evalbuv(1.f / 3.f, 2.f / 3.f, b300, b030, b003);
 		
-		out_Vertices[j + 9] = evalbuv(.666, 0, b300, b030, b003);
-		out_Vertices[j + 10] = evalbuv(.333, 0, b300, b030, b003);
-		out_Vertices[j + 11] = evalbuv(.333,.333, b300, b030, b003);
+		out_Vertices[j + 9] = evalbuv(2.f / 3.f, 0, b300, b030, b003);
+		out_Vertices[j + 11] = evalbuv(1.f / 3.f, 0, b300, b030, b003);
+		out_Vertices[j + 10] = evalbuv(1.f / 3.f, 1.f / 3.f, b300, b030, b003);
 		
-		out_Vertices[j + 12] = evalbuv(.333, .666, b300, b030, b003);
-		out_Vertices[j + 13] = evalbuv(.333,.333, b300, b030, b003);
-		out_Vertices[j + 14] = evalbuv(0, .666, b300, b030, b003);
+		out_Vertices[j + 12] = evalbuv(1.f / 3.f, 2.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 13] = evalbuv(0,1, b300, b030, b003);
+		out_Vertices[j + 14] = evalbuv(0, 2.f / 3.f, b300, b030, b003);
 		
-		out_Vertices[j + 15] = evalbuv(.333,.666, b300, b030, b003);
-		out_Vertices[j + 16] = evalbuv(.333, .333, b300, b030, b003);
-		out_Vertices[j + 17] = evalbuv(.0, .666, b300, b030, b003);
+		out_Vertices[j + 15] = evalbuv(1.f / 3.f, 2.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 17] = evalbuv(1.f / 3.f, 1.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 16] = evalbuv(.0, 2.f / 3.f, b300, b030, b003);
 		
-		out_Vertices[j + 18] = evalbuv( 0, .666, b300, b030, b003);
-		out_Vertices[j + 19] = evalbuv(.333, .333, b300, b030, b003);
-		out_Vertices[j + 20] = evalbuv(.0, .333, b300, b030, b003);
+		out_Vertices[j + 18] = evalbuv( 0, 2.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 20] = evalbuv(1.f / 3.f, 1.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 19] = evalbuv(.0, 1.f / 3.f, b300, b030, b003);
 		
-		out_Vertices[j + 21] = evalbuv(0, .333, b300, b030, b003);
-		out_Vertices[j + 22] = evalbuv(.333,.333, b300, b030, b003);
-		out_Vertices[j + 23] = evalbuv(.333, 0, b300, b030, b003);
+		out_Vertices[j + 21] = evalbuv(0, 1.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 23] = evalbuv(1.f / 3.f, 1.f / 3.f, b300, b030, b003);
+		out_Vertices[j + 22] = evalbuv(1.f / 3.f, 0, b300, b030, b003);
 		
-		out_Vertices[j + 24] = evalbuv(0, .333, b300, b030, b003);
+		out_Vertices[j + 24] = evalbuv(0, 1.f / 3.f, b300, b030, b003);
 		out_Vertices[j + 25] = evalbuv(0,0, b300, b030, b003);
-		out_Vertices[j + 26] = evalbuv(.0, .333, b300, b030, b003);
+		out_Vertices[j + 26] = evalbuv(1.f / 3.f, 0, b300, b030, b003);
 		
 		//cout <<"b: "<< b030.Normal[0] << ", " << b030.Normal[1] << ", " << b030.Normal[2] << endl;
 		//cout <<"j: " <<PNHead[j+13].Normal[0] << ", " << PNHead[j+13].Normal[1] << ", " << PNHead[j+13].Normal[2] << endl;
@@ -269,6 +311,7 @@ void generatePN(Vertex * &out_Vertices, GLushort* &out_Indices) {
 		out_Indices[i] = i;
 		
 	}
+	numVertices[3] = 9693;
 	//cout << "j: " << PNHead[0].Normal[0] << ", " << PNHead[0].Normal[1] << ", " << PNHead[0].Normal[2] << endl;
 	
 }
@@ -316,7 +359,7 @@ Vertex evalbuv(float u, float v, Vertex b300, Vertex b030, Vertex b003) {
 	vec3 v102 = (2.f*p3 + p1 - w31 * n3) / 3.f;
 	vec3 v201 = (2.f*p1 + p3 - w13 * n1) / 3.f;
 
-	vec3 ee = (v120 + v120 + v021 + v012 + v102 + v210) / 6.f;
+	vec3 ee = (v210 + v120 + v021 + v012 + v102 + v201) / 6.f;
 	vec3 vv = (p1 + p2 + p3) / 3.f;
 	vec3 v111 = ee + (ee - vv) / 2.f;
 
@@ -328,10 +371,12 @@ Vertex evalbuv(float u, float v, Vertex b300, Vertex b030, Vertex b003) {
 	float v23 = (2.*(dot(p3 - p2, n2 + n3) / dot(p3 - p2, p3 - p2)));
 	float v31 = (2.*(dot(p1 - p3, n3 + n1) / dot(p1 - p3, p1 - p3)));
 
-	vec3 n110 = normalize(n1 + n2 - v12 * (p2 - p1));
-	vec3 n011 = normalize(n2 + n3 - v23 * (p3 - p2));
-	vec3 n101 = normalize(n3 + n1 - v31 * (p1 - p3));
-
+	vec3 n110 = (n1 + n2 - v12 * (p2 - p1));
+	n110 = normalize(n110);
+	vec3 n011 = (n2 + n3 - v23 * (p3 - p2));
+	n011 = normalize(n011);
+	vec3 n101 = (n3 + n1 - v31 * (p1 - p3));
+	n101 = normalize(n101);
 	float w = 1-u-v;
 	
 	float u3 = u * u * u;
@@ -341,34 +386,32 @@ Vertex evalbuv(float u, float v, Vertex b300, Vertex b030, Vertex b003) {
 	float v2 = v * v;
 	float w2 = w*w;
 	
-
-	vec3 vOut = p1 * w3 + p2 * u3 + p3 * v3
-		+ v210 * 3.f * w2 * u + v120 * 3.f * w * u2 + v201 * 3.f * w2 * v
-		+ v021 * 3.f * u2 * v + v102 * 3.f * w * v2 + v012 * 3.f * u * v2
-		+ v012 * 6.f * w * u * v;
-
+	vec3 N = n1 * u + n2 * v + n3 * w;
+	N = normalize(N);
+	vec3 vOut = (p1 * w3) + (p2 * u3) + (p3 * v3)
+		+ (v210 * 3.f * w2) * u + (v120 * 3.f * w * u2) + (v201 * 3.f * w2 * v)
+		+ (v021 * 3.f * u2 * v) + (v102 * 3.f * w * v2) + (v012 * 3.f * u * v2)
+		+ (v111 * 6.f * w * u * v);
+	
+	
 
 	vec3 nOut = n200 * w2 + n020 * u2 + n002 * v2
 		+ n110 * w * u + n011 * u * v + n101 * w * v;
+
+	
 
 	Vertex out;
 	float pos[] = { vOut.x,vOut.y,vOut.z };
 	float norm[] = { nOut.x,nOut.y,nOut.z };
 	out.SetPosition(pos);
 	out.SetNormal(norm);
+	//cout << u<<","<<v << endl;
+	out.SetColor(b003.Color);
 	
-	if ((u == 1 && v == 1) || (u == 0 && v == 1) || (u == 1 && v == 0) || (u == 0 && v == 0)) {
-		float color[] = { .5,.5,.5,1 };
-		out.SetColor(color);
-	}
-	else {
-		
-		float color[] = { 1,0,0,1 };
-		out.SetColor(color);
-	}
-	out.SetUV(b003.UV);
-	if(out.Position[0]>7|| out.Position[1] > 7||out.Position[2] > 7)
-	cout<< "prob: " << out.Position[0] << ", " << out.Position[1] << ", " << out.Position[2] << endl;
+	
+	float uv[] = { w*b300.UV[0] + u * b030.UV[0] + v * b003.UV[0], w*b300.UV[1] + u * b030.UV[1] + v * b003.UV[1] };
+	out.SetUV(uv);
+	//out.SetUV(&b300.UV[0]);
 	return out;
 }
 
@@ -389,7 +432,7 @@ void loadObject(char* file, glm::vec4 color, Vertex * &out_Vertices, GLushort* &
 
 	const size_t vertCount = indexed_vertices.size();
 	const size_t idxCount = indices.size();
-
+	
 	// populate output arrays
 	out_Vertices = new Vertex[vertCount];
 	for (int i = 0; i < vertCount; i++) {
@@ -402,8 +445,9 @@ void loadObject(char* file, glm::vec4 color, Vertex * &out_Vertices, GLushort* &
 	out_Indices = new GLushort[idxCount];
 	for (int i = 0; i < idxCount; i++) {
 		out_Indices[i] = indices[i];
+		
 	}
-	cout << idxCount;
+	cout << idxCount << endl;
 	// set global variables!!
 	numVertices[ObjectId] = indexed_vertices.size();
 	NumIndices[ObjectId] = idxCount;
@@ -412,7 +456,21 @@ void loadObject(char* file, glm::vec4 color, Vertex * &out_Vertices, GLushort* &
 	
 }
 
+void animateSmile(float f, Vertex  *& firstVerts, Vertex  *& secondVerts, Vertex  *& outVertices, int numVerts) {
+	outVertices = new Vertex[numVerts];
+	for (int i = 0; i < numVerts; i++) {
+		vec3 p1 = { firstVerts[i].Position[0], firstVerts[i].Position[1], firstVerts[i].Position[2] };
+		vec3 p2 = { secondVerts[i].Position[0], secondVerts[i].Position[1], secondVerts[i].Position[2] };
+		float np[] = { p1.x*f + p2.x*(1 - f), p1.y*f + p2.y*(1 - f) ,p1.z*f + p2.z*(1 - f) };
+		outVertices[i].SetPosition(np);
+		outVertices[i].SetColor(&firstVerts[i].Color[0]);
+		outVertices[i].SetNormal(&firstVerts[i].Normal[0]);
+		outVertices[i].SetUV(&firstVerts[i].UV[0]);
+	}
 
+
+
+}
 void createObjects(void)
 {
 	//-- COORDINATE AXES --//
@@ -465,7 +523,7 @@ void createObjects(void)
 	for (int i = 0; i < 44; i++) {
 		ind[i] = i;
 	}
-	VertexBufferSize[1] = sizeof(GridVerts);	// ATTN: this needs to be done for each hand-made object with the ObjectID (subscript)
+	VertexBufferSize[1] = sizeof(GridVerts[0])*44;	// ATTN: this needs to be done for each hand-made object with the ObjectID (subscript)
 	createVAOs(GridVerts, ind, 1);
 	//-- .OBJs --//
 	
@@ -476,15 +534,36 @@ void createObjects(void)
 	Vertex* Verts;
 	GLushort* Idcs;
 	
-	loadObject("newHeadTest.obj", glm::vec4(.5,.5, .5, 1.0), headVertex, headIdcs, 2);
+	loadObject("newHead.obj", glm::vec4(.5,.5, .5, 1.0), headVertex, headIdcs, 2);
 	createVAOs(headVertex, headIdcs, 2);
+
+
+	loadObject("smile.obj", glm::vec4(.5, .5, .5, 1.0), smileVertex, smileIdcs, 5);
+	animateSmile(0, headVertex, smileVertex, renderHeadVertex, 1077);
+	VertexBufferSize[6] = sizeof(PNHead[0]) * 1077;
+	IndexBufferSize[6] = sizeof(GLushort) * 1077;
+	createVAOs(renderHeadVertex, headIdcs, 6);
 	
 	generatePN(PNHead,PNIdcs);
-	VertexBufferSize[3] = sizeof(PNHead[0])*9693;
+	VertexBufferSize[3] = sizeof(PNHead[0])* 9693;
+	IndexBufferSize[3] = sizeof(GLushort) * 9693;
+	NumIndices[3] = 9693;
+	
 	createVAOs(PNHead, PNIdcs, 3);
-	for (int i = 0; i < 9000; i++) {
-		//cout << "j: " << PNHead[i].Position[0] << ", " << PNHead[i].Position[1] << ", " << PNHead[i].Position[2] << endl;
+	
+	
+	/*
+	Vertex PN2[3231];
+	GLushort PN2Idcs[3231];
+	for (int i = 0; i < 3231; i++) {
+		PN2Idcs[i] = i;
 	}
+	VertexBufferSize[5] = sizeof(PN2[0]) * 3231;
+	IndexBufferSize[5] = sizeof(GLushort) * 3231;
+	createVAOs(PN2, PNIdcs, 5);
+	
+	*/
+	
 	
 }
 
@@ -498,8 +577,15 @@ void renderScene(void)
 	// Re-clear the screen for real rendering
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	glm::vec3 lightPos = glm::vec3(20.0f, 20.0f, 20.0f);
-	
+	glm::vec3 lightPos = glm::vec3(15.0f, 15.0f, 15.0f);
+	if (animate > 0) {
+		animateSmile(animate, headVertex, smileVertex, renderHeadVertex, 1077);
+		VertexBufferSize[6] = sizeof(PNHead[0]) * 1077;
+		IndexBufferSize[6] = sizeof(GLushort) * 1077;
+		createVAOs(renderHeadVertex, headIdcs, 6);
+		animate -= .0001;
+	}
+
 	glUseProgram(programID);
 	{
 		glm::vec3 lightPos = camPos;
@@ -520,24 +606,45 @@ void renderScene(void)
 		glDrawArrays(GL_LINES, 0, 44);
 		
 		
-		if (!showTexture && !showTess) {
+		if (!showTexture) {
 			//glBindVertexArray(VertexArrayId[2]);	// draw body
 
 			
 			//glDrawElements(GL_TRIANGLES, 1200, GL_UNSIGNED_SHORT, 0);
 			
 			if (showOriginal) {
-				glBindVertexArray(VertexArrayId[2]);	// draw body
-				glDrawArrays(GL_POINTS, 0, 9690);
+				
+				glBindVertexArray(VertexArrayId[6]);	// draw body
+				glDrawElements(GL_TRIANGLES, NumIndices[2], GL_UNSIGNED_SHORT, 0);
+				//glDrawElements(GL_TRIANGLES, NumIndices[2], GL_UNSIGNED_SHORT, 0);
+
+
+
+				
 			}
 			else {
+				//glBindVertexArray(VertexArrayId[2]);	// draw body
+				//glDrawArrays(GL_POINTS, 0, 1200);
+				//glDrawElements(GL_TRIANGLES, NumIndices[2], GL_UNSIGNED_SHORT, 0);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
+				//glDrawArrays(GL_POINTS, 0, 9558);
+				
+				glPointSize(3);
 				glBindVertexArray(VertexArrayId[3]);	// draw body
-				glDrawArrays(GL_POINTS, 0, 9690);
-				//glDrawElements(GL_TRIANGLES, 9600, GL_UNSIGNED_SHORT, 0);
+				if (!drawEls) {
+					glDrawArrays(GL_TRIANGLES, 0, numVertices[3]);
+				}
+				else {
+					//glDrawArrays(GL_POINTS, 0, numVertices[3]);
+					glDrawElements(GL_TRIANGLES, numVertices[3], GL_UNSIGNED_SHORT, 0);
+				}
+				
+				
 			}
 			
 			
 		}
+		
 		
 		
 		
@@ -556,40 +663,30 @@ void renderScene(void)
 			// in the "MVP" uniform
 			glUniformMatrix4fv(TextureMatrixID, 1, GL_FALSE, &MVP[0][0]);
 
+			//glBindVertexArray(VertexArrayId[3]);	// draw body
 
-
-			glBindVertexArray(VertexArrayId[2]);	// draw body
-
+			//glDrawArrays(GL_TRIANGLES, 0, 9558);
 			// Bind our texture in Texture Unit 0
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, Texture);
 			// Set our "myTextureSampler" sampler to use Texture Unit 0
 			glUniform1i(TextureID, 0);
+			
+			if (showOriginal) {
+				glBindVertexArray(VertexArrayId[6]);	// draw body
+				glDrawElements(GL_TRIANGLES, NumIndices[2], GL_UNSIGNED_SHORT, 0);
+			}
+			else {
+				glBindVertexArray(VertexArrayId[3]);
+				glDrawElements(GL_TRIANGLES, NumIndices[3], GL_UNSIGNED_SHORT, 0);
+			}
 
-			glDrawElements(GL_TRIANGLES, 1200, GL_UNSIGNED_SHORT, 0);
+			
 
-			glBindVertexArray(0);
-		}
-	}
-	if (showTess) {
-		glUseProgram(tessProgramID);
-		{
-			glm::mat4x4 modelMatrix = glm::mat4(1.0);
-			glUniform3f(tessLightID, lightPos.x, lightPos.y, lightPos.z);
-			glUniformMatrix4fv(tessViewMatrixID, 1, GL_FALSE, &gViewMatrix[0][0]);
-			glUniformMatrix4fv(tessProjectionMatrixID, 1, GL_FALSE, &gProjectionMatrix[0][0]);
-			glUniformMatrix4fv(tessModelMatrixID, 1, GL_FALSE, &modelMatrix[0][0]);
+			
 
-			glUniform1f(tessellationLevelInnerID, 5);
-			glUniform1f(tessellationLevelOuterID, 5);
+			
 
-			glPatchParameteri(GL_PATCH_VERTICES, 3);
-			glBindVertexArray(VertexArrayId[2]);
-			glDrawElements(GL_PATCHES, NumIndices[2], GL_UNSIGNED_SHORT, (void*)0);
-
-			/*glPatchParameteri(GL_PATCH_VERTICES, 3);
-			glBindVertexArray(vertexArrayID[2]);
-			glDrawElements(GL_PATCHES, numIndices[2], GL_UNSIGNED_SHORT, (void*)0);*/
 
 			glBindVertexArray(0);
 		}
@@ -668,7 +765,9 @@ void pickObject(void)
 
 int initWindow(void)
 {
-	camPos = { 10,10,10 };
+	
+	subTriangle = 1;
+	camPos = { 8,8,8 };
 	// Initialise GLFW
 	if (!glfwInit()) {
 		fprintf(stderr, "Failed to initialize GLFW\n");
@@ -720,12 +819,12 @@ void moveCameraLR(bool left) {
 	float x = camPos[0];
 	float y = camPos[1];
 	float z = camPos[2];
-
+	float mag = 14;
 	
-	vec3 v = {x-z/17.32,y,z+x/17.32};
+	vec3 v = {x-z/mag,y,z+x/ mag };
 	
 	if (!left) {
-		v = { x + z / 17.32,y,z - x / 17.32 };
+		v = { x + z / mag,y,z - x / mag };
 	}
 	camPos = v;
 	vec3 up = { -v[0],v[1],-v[2] };
@@ -738,12 +837,15 @@ void moveCameraZ(bool moveUp) {
 	float x = camPos[0];
 	float y = camPos[1];
 	float z = camPos[2];
-	float mag = 17;
+	float mag = 14;
 
 	vec3 v = {x-x/mag,y+(mag-y)/ mag,z-z/ mag };
-	
+	float ny = sqrt(pow(mag, 2) - pow(v.x, 2) - pow(v.z, 2));
+		v = { v.x,ny,v.z };
 	if (!moveUp) {
-		v = { x + x/ mag,y - (mag - y) / mag,z + (17-z)/ mag };
+		v = { x + x/ mag,y - (mag - y) / mag,z + (mag-z)/ mag };
+		ny = sqrt(pow(mag, 2) - pow(v.x, 2) - pow(v.z, 2));
+		v = { v.x,ny,v.z };
 	}
 	camPos = v;
 	vec3 up = { -v[0],v[1],-v[2] };
@@ -796,24 +898,15 @@ void initOpenGL(void)
 	
 	Texture = loadBMP_custom("Anthony.bmp");
 	TextureID = glGetUniformLocation(TextureProgramID, "myTextureSampler");
+
+
 	
-
-	tessProgramID = loadTessShaders("Tessellation.vs.glsl", "Tessellation.tc.glsl", "Tessellation.te.glsl",
-		"Tessellation.fs.glsl");
-	tessModelMatrixID = glGetUniformLocation(tessProgramID, "M");
-	tessViewMatrixID = glGetUniformLocation(tessProgramID, "V");
-	tessProjectionMatrixID = glGetUniformLocation(tessProgramID, "P");
-	tessLightID = glGetUniformLocation(tessProgramID, "lightPosition_worldspace");
-	tessellationLevelInnerID = glGetUniformLocation(tessProgramID, "tessellationLevelInner");
-	tessellationLevelOuterID = glGetUniformLocation(tessProgramID, "tessellationLevelOuter");
-
-
 
 	createObjects();
 }
 
 
-void createVAOs(Vertex Vertices[], unsigned short Indices[], int ObjectId) {
+void createVAOs(Vertex Vertices[], GLushort Indices[], int ObjectId) {
 	
 	
 	GLenum ErrorCheckValue = glGetError();
@@ -833,11 +926,12 @@ void createVAOs(Vertex Vertices[], unsigned short Indices[], int ObjectId) {
 
 	// Create Buffer for indices
 	if (Indices != NULL) {
+		//cout << ObjectId << endl;
+		
 		glGenBuffers(1, &IndexBufferId[ObjectId]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBufferId[ObjectId]);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, IndexBufferSize[ObjectId], Indices, GL_STATIC_DRAW);
 	}
-
 	// Assign vertex attributes
 	// Assign vertex es
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, VertexSize, 0);
@@ -887,7 +981,7 @@ void cleanup(void)
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	cout << actions << endl;
+	//cout << actions << endl;
 	// ATTN: MODIFY AS APPROPRIATE
 	if (action == GLFW_REPEAT) {
 		switch (key)
@@ -933,13 +1027,18 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		case GLFW_KEY_T:
 			showTexture = !showTexture;
 			break;
-		case GLFW_KEY_L:
-			showTess = !showTess;
-			break;
 		case GLFW_KEY_F:
 			showOriginal = !showOriginal;
 			break;
+		case GLFW_KEY_A:
+			subTriangle++;
+			break;
 		
+		case GLFW_KEY_Q:
+			drawEls = !drawEls;
+			break;
+		case GLFW_KEY_S:
+			animate = 1;
 		}
 
 		
@@ -955,10 +1054,11 @@ static void mouseCallback(GLFWwindow* window, int button, int action, int mods)
 
 int main(void)
 {
+	drawEls = false;
 	actions = -1;
 	showTexture = false;
 	showSmooth = false;
-	showTess = false;
+	
 	showOriginal = true;
 	// initialize window
 	int errorCode = initWindow();
